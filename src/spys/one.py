@@ -5,7 +5,7 @@ from typing import Optional, Generator, Union
 import requests
 from bs4 import BeautifulSoup
 
-from src.spys import HOST_ONE, BaseProxyView
+from spys import HOST_ONE, BaseProxyView
 
 __all__ = ('ProxyView', 'ProxyViews', 'get_content', 'get_proxies', 'parse_table')
 

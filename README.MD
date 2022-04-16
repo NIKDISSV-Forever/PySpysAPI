@@ -56,7 +56,7 @@ def filter_proxies(proxies: ProxiesList, key: Callable) -> ProxiesList:
 
 ```python
 """Функции для краткой записи получения различных прокси"""
-from src.spys import *
+from spys import *
 
 
 def get_http_and_ssl_proxies() -> ProxyViews:
@@ -88,7 +88,7 @@ def get_ssl_proxies() -> ProxyViews:
 
 ### Не злоупотребляйте методами из этого модуля, существует риск бана.
 
-![img.png](resources/risk_of_blocking.png)
+![risk_of_blocking.png](https://github.com/NIKDISSV-Forever/PySpysAPI/blob/main/resources/risk_of_blocking.png?raw=true)
 
 ```python
 

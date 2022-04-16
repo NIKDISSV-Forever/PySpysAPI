@@ -3,7 +3,7 @@ import urllib.parse
 import urllib.request
 from typing import Iterable, Callable
 
-from src.spys import HOST_ME, BaseProxyView
+from spys import HOST_ME, BaseProxyView
 
 __all__ = ('DATA_REGEX', 'ProxyView', 'ProxyViews', 'ResultType', 'parse_proxies', 'get_proxies', 'filter_proxies')
 DATA_REGEX = re.compile(r'(\d+\.\d+\.\d+\.\d+):(\d+)\s+(..)-(.)-(S)?(!*)-?\s+([+-])?')

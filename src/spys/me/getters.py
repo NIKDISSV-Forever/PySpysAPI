@@ -1,5 +1,5 @@
 """Functions to concisely get different proxies"""
-from src.spys.me import *
+from spys.me import *
 
 
 def get_http_and_ssl_proxies() -> ProxyViews:
