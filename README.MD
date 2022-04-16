@@ -2,6 +2,8 @@ spys - spys.me/spys.one Python API.
 
 API для получения списка прокси с сайта spys.
 
+> pip install -U [spys](https://pypi.org/project/spys/)
+
 # Пакеты:
 
 ## spys
