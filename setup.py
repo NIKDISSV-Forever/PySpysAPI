@@ -7,7 +7,7 @@ with open('requires.txt', encoding='UTF-8') as f:
 
 setuptools.setup(
     name='spys',
-    version='1.0.4',
+    version='1.0.5',
     author='Nikita (NIKDISSV)',
     author_email='nikdissv.forever@protonmail.com',
     description='Python API for spys.one/spys.me proxies',
@@ -16,7 +16,7 @@ setuptools.setup(
     url='https://github.com/NIKDISSV-Forever/PySpysAPI',
     package_dir={'': 'src'},
     packages=setuptools.find_packages(where='src'),
-    requires=requires,
+    install_requires=requires,
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
