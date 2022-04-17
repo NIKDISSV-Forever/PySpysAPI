@@ -9,9 +9,9 @@ API для получения списка прокси с сайта spys.
 ## spys
 
 ```python
-from spys import me, one
+from spys import me, one, filters, proxy_view
 
-__all__ = ('me', 'one')
+__all__ = ('me', 'one', 'filters', 'proxy_view')
 ```
 
 ## spys.me
