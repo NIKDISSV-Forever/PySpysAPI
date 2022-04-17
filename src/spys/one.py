@@ -1,11 +1,10 @@
 import array
 import urllib.parse
 from datetime import datetime
-from pprint import pp
 from typing import Optional, Generator, Union
 
+import bs4
 import requests
-from bs4 import BeautifulSoup
 
 from spys import filters
 from spys.proxy_view import BaseProxyView, ProxyViews
@@ -107,7 +106,10 @@ def get_proxies(show: int = 0,
 
 def parse_table(content: str) -> ProxyViews:
     """Parse the response from the site and turn the data from the table into the ProxyView class"""
-    soup = BeautifulSoup(content, 'html.parser')
+    try:
+        soup = bs4.BeautifulSoup(content, 'lxml')
+    except bs4.FeatureNotFound:
+        soup = bs4.BeautifulSoup(content, 'html.parser')
     exec(soup.find('script', {'type': 'text/javascript'}).text, obfuscated := {})
     try:
         del obfuscated['__builtins__']
