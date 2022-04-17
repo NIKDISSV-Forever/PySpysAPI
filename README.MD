@@ -41,8 +41,17 @@ def parse_proxies(data: str) -> ResultType:
     ...
 
 
+def get_content(protocol: str) -> str:
+    """Отправит запрос на хост, вернёт спаршенную информацию (см. parse_proxies)"""
+    ...
+
+
 def get_proxies(protocol: str) -> ProxiesList:
-    """Параметр protocol - либо proxy (http) либо socks"""
+    """
+    Параметр protocol - либо proxy (http) либо socks
+    Разрешённые протоколы: proxy, socks | socks5, all, http, https, ssl (https & socks ssl)
+    :raise ValueError: если протокол не поддерживается
+    """
     ...
 
 
@@ -107,12 +116,12 @@ class ProxyView(BaseProxyView):
     check_date: datetime.datetime | str
 
 
-def get_content(xpp: int = 0, xf1: int = 0, xf2: int = 0, xf3: int = 0, xf4: Optional[int] = 0,
-                xf5: int = 0) -> Generator[int | str | None, int | str | None, None]:
+def get_content(show: int = 0, anm: int = 0, ssl: int = 0, sort: int = 0, port: int | None = 0, type: int = 0
+                ) -> Generator[array.array | str | None, int | str | None, None]:
     """
     Низкоуровневая функция, параметры - input data поля см. get_proxies имена параметров.
     Вернёт генератор, если порт это None (xf4), 
-        первый next (yield) вернёт список доступных портов,
+        первый next (yield) вернёт список (array.array('H')) доступных портов,
         второй next примит порт (Воспользуйтесь методом send),
         и только третий next вернёт ответ от сайта (str).
     Если порт не None, первый next вернёт ответ от сайта.
@@ -122,7 +131,7 @@ def get_content(xpp: int = 0, xf1: int = 0, xf2: int = 0, xf3: int = 0, xf4: Opt
 
 
 def get_proxies(show: int = 0, anm: int = 0, ssl: int = 0, sort: int = 0, port: int = 0, type: int = 0) -> ProxyViews:
-    return parse_table(next(get_content(show, anm, ssl, sort, 0 if port is None else port, type)))
+    ...
 
 
 def parse_table(content: str) -> ProxyViews:
@@ -206,3 +215,7 @@ class BaseProxyView:
 
 ProxyViews: Type[Iterable[BaseProxyView]] = Iterable[BaseProxyView]
 ```
+
+### For English documentation use pydoc
+
+> python -m pydoc -p 8081 [spys](http://localhost:8081/spys)
