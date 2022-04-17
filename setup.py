@@ -7,7 +7,7 @@ with open('requires.txt', encoding='UTF-8') as f:
 
 setuptools.setup(
     name='spys',
-    version='1.0.3',
+    version='1.0.4',
     author='Nikita (NIKDISSV)',
     author_email='nikdissv.forever@protonmail.com',
     description='Python API for spys.one/spys.me proxies',
