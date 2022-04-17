@@ -1,10 +1,13 @@
+import array
 import urllib.parse
 from datetime import datetime
+from pprint import pp
 from typing import Optional, Generator, Union
 
 import requests
 from bs4 import BeautifulSoup
 
+from spys import filters
 from spys.proxy_view import BaseProxyView, ProxyViews
 
 __all__ = ('HOST', 'HTTP_PROXY_LIST_URL',
@@ -51,12 +54,12 @@ class ProxyView(BaseProxyView):
                                                                  _check_date[0].strip())
 
 
-def get_content(xpp: int = 0, xf1: int = 0, xf2: int = 0, xf3: int = 0, xf4: Optional[int] = 0,
-                xf5: int = 0) -> Generator[Union[int, str, None], Union[int, str, None], None]:
+def get_content(show: int = 0, anm: int = 0, ssl: int = 0, sort: int = 0, port: Optional[int] = 0, type: int = 0
+                ) -> Generator[Union[array.array, str, None], Union[int, str, None], None]:
     """
     Low-level function, parameters - input data fields see get_proxies parameter names.
     Will return the generator if the port is None (xf4),
-        the first next (yield) will return a list of available ports,
+        the first next (yield) will return a list (array.array('H')) of available ports,
         the second next will accept the port (Use the send method),
         and only the third next will return the response from the site (str).
     If the port is not None, the first next will return the response from the site.
@@ -68,19 +71,37 @@ def get_content(xpp: int = 0, xf1: int = 0, xf2: int = 0, xf3: int = 0, xf4: Opt
                                           headers={
                                               'User-Agent': 'Mozilla/5.0'}).text,
                                  'html.parser')
-        xx0 = xx0_soup.find('input', {'name': 'xx0'})['value']
-        if xf4 is None:
-            yield [opt.contents[0] for opt in xx0_soup.find(attrs={'id': 'xf4'}).find_all('option')]
-            xf4 = yield
-            xf4 = str(xf4)
+        token = xx0_soup.find('input', {'name': 'xx0'})['value']
+        if port is None:
+            yield array.array('H', [opt.contents[0] for opt in xx0_soup.find(attrs={'id': 'xf4'}).find_all('option')])
+            port = yield
+            port = str(port)
         while True:
             yield ses.post(HTTP_PROXY_LIST_URL,
                            headers={'referer': HTTP_PROXY_LIST_URL, 'User-Agent': 'Mozilla/5.0'},
-                           data={
-                               'xx0': xx0, 'xpp': xpp, 'xf1': xf1, 'xf2': xf2, 'xf3': xf3, 'xf4': xf4, 'xf5': xf5}).text
+                           data={'xx0': token,
+                                 'xpp': show,
+                                 'xf1': anm,
+                                 'xf2': ssl,
+                                 'xf3': sort,
+                                 'xf4': port,
+                                 'xf5': type}
+                           ).text
 
 
-def get_proxies(show: int = 0, anm: int = 0, ssl: int = 0, sort: int = 0, port: int = 0, type: int = 0) -> ProxyViews:
+def get_proxies(show: int = 0,
+                anm: Union[int, str] = 0,
+                ssl: Union[int, str] = 0,
+                sort: Union[int, str] = 0,
+                port: int = 0,
+                type: Union[int, str] = 0) -> ProxyViews:
+    show = filters.Show(show)
+    anm = filters.Anm(anm)
+    ssl = filters.SSL(ssl)
+    sort = filters.Sort(sort)
+    port = filters.Port(port)
+    type = filters.Type(type)
+    # noinspection PyTypeChecker
     return parse_table(next(get_content(show, anm, ssl, sort, 0 if port is None else port, type)))
 
 

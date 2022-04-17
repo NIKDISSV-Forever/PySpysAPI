@@ -16,10 +16,10 @@ class IntChoice:
     type = int
 
     def __new__(cls, item) -> type:
-        if not isinstance(item, cls.type):
-            item = cls.type(item)
         if item in range(len(cls.values) + 1):
             return item
+        if not isinstance(item, cls.type):
+            item = cls.type(item)
         try:
             return cls.values.index(item)
         except ValueError:
@@ -74,4 +74,4 @@ class Sort(StringChoice):
 
 
 def filter_proxies(proxies: ProxyViews, key: Callable = None) -> ProxyViews:
-    return tuple(filter(key, proxies))
+    return tuple(proxy for proxy in proxies if key(proxy))
