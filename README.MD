@@ -9,33 +9,31 @@ API для получения списка прокси с сайта spys.
 ## spys
 
 ```python
-__all__ = ('HOST_ONE', 'HOST_ME', 'BaseProxyView')
-HOST_ONE = 'https://spys.one/'
-HOST_ME = 'https://spys.me/'
+from spys import me, one
 
-
-class BaseProxyView: ...
+__all__ = ('me', 'one')
 ```
 
 ## spys.me
 
 ```python
-__all__ = ('DATA_REGEX', 'ProxyView', 'ProxiesList', 'ResultType', 'parse_proxies', 'get_proxies', 'filter_proxies')
+__all__ = ('DATA_REGEX', 'HOST',
+           'Getters',
+           'ProxyView', 'ResultType',
+           'parse_proxies', 'get_proxies')
+
+ResultType = tuple[str, ProxyViews, str]
+HOST = 'https://spys.me/'
 DATA_REGEX = ...  # Регулярное выражение для парсинга ответа от API
 
 
 class ProxyView(BaseProxyView):
-    host: str
-    port: int | str
-    country_code: str
-    anonymity: str
-    ssl_support: bool
-    more_info: str  # Имеется дополнительная информация о прокси (Получение только из spys.one)
-    google_passed: str
+    def __init__(self, host: str, port: str,
+                 country: str, anonymity: str, ssl_support: str, more_info: str, google_passed: str):
+        ...
 
-
-ProxyViews = Iterable[ProxyView]
-ResultType = tuple[str, ProxiesList, str]  # head, proxies, footer
+    more_info: bool  # Имеется ли дополнительная информация о прокси (Получение самой информации только из spys.one)
+    google_passed: bool
 
 
 def parse_proxies(data: str) -> ResultType:
@@ -48,40 +46,32 @@ def get_proxies(protocol: str) -> ProxiesList:
     ...
 
 
-def filter_proxies(proxies: ProxiesList, key: Callable) -> ProxiesList:
-    return tuple(filter(key, proxies))
-```
+class Getters:
+    """Functions to concisely get different proxies"""
 
-## spys.me.getters
+    @staticmethod
+    def get_http_s_proxies() -> ProxyViews:  # http | https
+        return get_proxies('proxy')
 
-```python
-"""Функции для краткой записи получения различных прокси"""
-from spys import *
+    @staticmethod
+    def get_socks5_proxies() -> ProxyViews:
+        return get_proxies('socks')
 
+    @staticmethod
+    def get_http_proxies() -> ProxyViews:
+        return filter_proxies(get_proxies('proxy'), lambda x: not x.ssl_support)
 
-def get_http_and_ssl_proxies() -> ProxyViews:
-    return get_proxies('proxy')
+    @staticmethod
+    def get_https_proxies() -> ProxyViews:
+        return filter_proxies(get_proxies('proxy'), lambda x: x.ssl_support)
 
+    @classmethod
+    def get_all_proxies(cls) -> ProxyViews:
+        return cls.get_http_and_ssl_proxies() + cls.get_socks5_proxies()
 
-def get_socks5_proxies() -> ProxyViews:
-    return get_proxies('socks')
-
-
-def get_all_proxies() -> ProxyViews:
-    return get_http_and_ssl_proxies() + get_socks5_proxies()
-
-
-def get_http_proxies() -> ProxyViews:
-    return filter_proxies(get_proxies('proxy'), lambda x: not x.ssl_support)
-
-
-def get_https_proxies() -> ProxyViews:
-    return filter_proxies(get_proxies('proxy'), lambda x: x.ssl_support)
-
-
-def get_ssl_proxies() -> ProxyViews:
-    return filter_proxies(get_all_proxies(), lambda x: x.ssl_support)
-
+    @classmethod
+    def get_ssl_proxies(cls, from_proxies: ProxyViews = None) -> ProxyViews:
+        return filter_proxies(cls.get_all_proxies() if from_proxies is None else from_proxies, lambda x: x.ssl_support)
 ```
 
 ## spys.one
@@ -91,31 +81,30 @@ def get_ssl_proxies() -> ProxyViews:
 ![risk_of_blocking.png](https://github.com/NIKDISSV-Forever/PySpysAPI/blob/main/resources/risk_of_blocking.png?raw=true)
 
 ```python
+__all__ = ('HOST', 'HTTP_PROXY_LIST_URL',
+           'ProxyView',
+           'get_content', 'get_proxies', 'parse_table')
 
-__all__ = ('ProxyView', 'ProxyViews', 'get_content', 'get_proxies', 'parse_table')
-
-HTTP_PROXY_LIST_URL = urllib.parse.urljoin(HOST_ONE, 'http-proxy-list/')
+HOST = 'https://spys.one/'
+HTTP_PROXY_LIST_URL = urllib.parse.urljoin(HOST, 'http-proxy-list/')
 
 
 class ProxyView(BaseProxyView):
-    host: str
-    port: int | str
+    def __init__(self,
+                 host: str, port: str, type: str, anonymity: str, country_city: tuple[str, str], hostname_org: str,
+                 latency: str, uptime: str, check_date: str):
+        ...
+
     type: str
-    anonymity: str
-    country_city: list[str, str]  # ['Страна', '(Город)']
-    country, city: str
-    more_info: str  # Строка с доп. инфой о ПО прокси
-    hostname_org: list[str, str]  # ['Хост', 'Организация']
-    hostname, org: str
+    city: str
+    hostname: str
+    org: str
     latency: float | str
-    uptime: int  # %
-    checks: int
+    uptime: int | str
+    checks: int | str
     last_check_status: bool
-    last_check_ago: str  # Сколько секунд/минут/часов/... назад была проверка
+    last_check_ago: str
     check_date: datetime.datetime | str
-
-
-ProxyViews = tuple[ProxyView]
 
 
 def get_content(xpp: int = 0, xf1: int = 0, xf2: int = 0, xf3: int = 0, xf4: Optional[int] = 0,
@@ -153,7 +142,6 @@ class IntChoice:
     Правильное представление данных можно получить передав желаемый фильтр в
     конструктор класса (метод __new__) или через getitem (__class_getitem__)
     """
-    __slots__ = ()
     values = ()
     type = int
 
@@ -197,4 +185,24 @@ class Type(StringChoice):
 
 class Sort(StringChoice):
     values = ('DATE', 'SPEED')
+```
+
+## spys.proxy_view
+
+```python
+__all__ = ('BaseProxyView', 'ProxyViews')
+
+
+class BaseProxyView:
+    host: str
+    port: int | str
+    anonymity: str
+    country: str
+    more_info: str | bool
+
+    def __str__(self):
+        return f'{self.host}:{self.port}'
+
+
+ProxyViews: Type[Iterable[BaseProxyView]] = Iterable[BaseProxyView]
 ```

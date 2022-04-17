@@ -5,14 +5,19 @@ from typing import Optional, Generator, Union
 import requests
 from bs4 import BeautifulSoup
 
-from spys import HOST_ONE, BaseProxyView
+from spys.proxy_view import BaseProxyView, ProxyViews
 
-__all__ = ('ProxyView', 'ProxyViews', 'get_content', 'get_proxies', 'parse_table')
+__all__ = ('HOST', 'HTTP_PROXY_LIST_URL',
+           'ProxyView',
+           'get_content', 'get_proxies', 'parse_table')
 
-HTTP_PROXY_LIST_URL = urllib.parse.urljoin(HOST_ONE, 'http-proxy-list/')
+HOST = 'https://spys.one/'
+HTTP_PROXY_LIST_URL = urllib.parse.urljoin(HOST, 'en/http-proxy-list/')
 
 
 class ProxyView(BaseProxyView):
+    __slots__ = ('type', 'city', 'hostname', 'org', 'latency', 'uptime', 'checks',
+                 'last_check_status', 'last_check_ago', 'check_date')
 
     def __init__(self,
                  host: str, port: str, type: str, anonymity: str, country_city: tuple[str, str], hostname_org: str,
@@ -23,27 +28,27 @@ class ProxyView(BaseProxyView):
         self.anonymity = anonymity
         if len(country_city) < 2:
             country_city += '',
-        self.country_city = country_city[0].split()
-        while len(self.country_city) < 2:
-            self.country_city += '',
-        self.country, self.city = self.country_city[0], self.country_city[1].strip('()')
+        country_city = country_city[0].split()
+        while len(country_city) < 2:
+            country_city += '',
+        self.country = country_city[0]
+        self.city = country_city[1].strip('()')
         self.more_info = country_city[1]
-        self.hostname_org = hostname_org.split(' ', 1)
-        self.hostname, self.org = self.hostname_org
+        hostname_org = hostname_org.split(' ', 1)
+        while len(hostname_org) < 2:
+            hostname_org.append('')
+        self.hostname, self.org = hostname_org
         self.latency = self._convert_to(float, latency)
-        self._uptime = uptime.split(' ')
-        while len(self._uptime) < 3:
-            self._uptime.insert(0, '')
-        self.uptime = self._convert_to(int, self._uptime[0].rstrip('%'))
-        self.checks = self._convert_to(int, self._uptime[1].strip('()'))
-        self.last_check_status = self._uptime[2] == '+'
+        _uptime = uptime.split(' ')
+        while len(_uptime) < 3:
+            _uptime.insert(0, '')
+        self.uptime = self._convert_to(int, _uptime[0].rstrip('%'))
+        self.checks = self._convert_to(int, _uptime[1].strip('()'))
+        self.last_check_status = _uptime[2] == '+'
         _check_date = check_date.partition('(')
         self.last_check_ago = _check_date[2].rstrip(')')
         self.check_date: Union[datetime, str] = self._convert_to(lambda s: datetime.strptime(s, '%d-%b-%Y %H:%M'),
                                                                  _check_date[0].strip())
-
-
-ProxyViews = tuple[ProxyView]
 
 
 def get_content(xpp: int = 0, xf1: int = 0, xf2: int = 0, xf3: int = 0, xf4: Optional[int] = 0,

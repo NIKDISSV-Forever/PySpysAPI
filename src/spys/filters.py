@@ -1,5 +1,8 @@
 """Module for convenient presentation of input data fields (see spy.one.get_content)"""
 import difflib
+from typing import Callable
+
+from spys.proxy_view import ProxyViews
 
 
 class IntChoice:
@@ -68,3 +71,7 @@ class Type(StringChoice):
 class Sort(StringChoice):
     __slots__ = ()
     values = ('DATE', 'SPEED')
+
+
+def filter_proxies(proxies: ProxyViews, key: Callable = None) -> ProxyViews:
+    return tuple(filter(key, proxies))
