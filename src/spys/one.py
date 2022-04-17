@@ -1,7 +1,7 @@
 import array
 import urllib.parse
 from datetime import datetime
-from typing import Optional, Generator, Union
+from typing import Optional, Generator, Union, Tuple
 
 import bs4
 import requests
@@ -22,7 +22,7 @@ class ProxyView(BaseProxyView):
                  'last_check_status', 'last_check_ago', 'check_date')
 
     def __init__(self,
-                 host: str, port: str, type: str, anonymity: str, country_city: tuple[str, str], hostname_org: str,
+                 host: str, port: str, type: str, anonymity: str, country_city: Tuple[str, str], hostname_org: str,
                  latency: str, uptime: str, check_date: str):
         self.host = host
         self.port = self._convert_to(int, port)
@@ -66,10 +66,8 @@ def get_content(show: int = 0, anm: int = 0, ssl: int = 0, sort: int = 0, port: 
     The answer must be passed to the parse_table function to get a list of proxies.
     """
     with requests.session() as ses:
-        xx0_soup = BeautifulSoup(ses.post('https://spys.one/en/http-proxy-list/',
-                                          headers={
-                                              'User-Agent': 'Mozilla/5.0'}).text,
-                                 'html.parser')
+        xx0_soup = _best_bs4_future(ses.post('https://spys.one/en/http-proxy-list/',
+                                             headers={'User-Agent': 'Mozilla/5.0'}).text)
         token = xx0_soup.find('input', {'name': 'xx0'})['value']
         if port is None:
             yield array.array('H', [opt.contents[0] for opt in xx0_soup.find(attrs={'id': 'xf4'}).find_all('option')])
@@ -105,11 +103,11 @@ def get_proxies(show: int = 0,
 
 
 def parse_table(content: str) -> ProxyViews:
-    """Parse the response from the site and turn the data from the table into the ProxyView class"""
-    try:
-        soup = bs4.BeautifulSoup(content, 'lxml')
-    except bs4.FeatureNotFound:
-        soup = bs4.BeautifulSoup(content, 'html.parser')
+    """
+    Parse the response from the site and turn the data from the table into the ProxyView class.
+    If lxml is installed (pip install lxml), it will be used.
+    """
+    soup = _best_bs4_future(content)
     exec(soup.find('script', {'type': 'text/javascript'}).text, obfuscated := {})
     try:
         del obfuscated['__builtins__']
@@ -123,3 +121,10 @@ def parse_table(content: str) -> ProxyViews:
               + ((cols[3].text, acronym.get('title')) if (acronym := cols[3].find('acronym')) else (cols[3].text,),)
               + tuple(col.text for col in cols[4:] if col.text)))
         for cols in (row.find_all('td') for row in soup.find_all('table')[2].find_all('tr')[2:-1]) if len(cols) > 1)
+
+
+def _best_bs4_future(markup: str) -> bs4.BeautifulSoup:
+    try:
+        return bs4.BeautifulSoup(markup, 'lxml')
+    except bs4.FeatureNotFound:
+        return bs4.BeautifulSoup(markup, 'html.parser')
