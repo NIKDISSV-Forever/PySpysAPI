@@ -12,7 +12,7 @@ __all__ = ('DATA_REGEX', 'HOST',
 
 ResultType = tuple[str, ProxyViews, str]
 HOST = 'https://spys.me/'
-DATA_REGEX = re.compile(r'(\d+\.\d+\.\d+\.\d+):(\d+)\s+(..)-(.)-(S)?(!*)-?\s+([+-])?')
+DATA_REGEX = re.compile(r'(\d+\.\d+\.\d+\.\d+):(\d+)\s+(..)-(.)-?(S?)(!?)\s+([+-]?)')
 
 
 class ProxyView(BaseProxyView):
@@ -30,19 +30,48 @@ class ProxyView(BaseProxyView):
 
 
 def parse_proxies(data: str) -> ResultType:
-    """Returns a tuple from the
-     additional information about API (str), list of proxies and additional proxy list information (str)"""
+    """
+    Returns a tuple from the additional information about API (str),
+    list of proxies and additional proxy list information (str)
+    """
     header, proxies_lines, footer = data.replace('\r', '').split('\n\n')
     return (header,
             tuple(ProxyView(*data) for data in DATA_REGEX.findall(proxies_lines)),
             footer)
 
 
-def get_proxies(protocol: str) -> ProxyViews:
-    """protocol parameter - either proxy (http) or socks"""
-    return parse_proxies(urllib.request.urlopen(
+def get_content(protocol: str) -> str:
+    """Send a request to the host, return the parsed information (see parse_proxies)"""
+    return urllib.request.urlopen(
         urllib.request.Request(urllib.parse.urljoin(HOST, f'{protocol}.txt'),
-                               headers={'User-Agent': 'Mozilla/5.0'})).read().decode('utf-8'))[1]
+                               headers={'User-Agent': 'Mozilla/5.0'})).read().decode('utf-8')
+
+
+def _get_proxies(protocol: str) -> ProxyViews:
+    return parse_proxies(get_content(protocol))[1]
+
+
+def get_proxies(protocol: str = 'proxy') -> ProxyViews:
+    """
+    Protocol parameter - either proxy (http) or socks (socks5).
+    Allowed protocols: proxy, socks | socks5, all, http, https, ssl (https & socks ssl)
+    :raise ValueError: if protocol is not allowed
+    """
+    protocol = protocol.lower()
+    if protocol not in ('proxy', 'socks') and protocol in ('all', 'http', 'https', 'ssl', 'socks5'):
+        if protocol == 'all':
+            Getters.get_all_proxies()
+        elif protocol == 'http':
+            Getters.get_http_proxies()
+        elif protocol == 'https':
+            Getters.get_https_proxies()
+        elif protocol == 'socks5':
+            protocol = 'socks'
+        elif protocol == 'ssl':
+            return Getters.get_ssl_proxies()
+        else:
+            raise ValueError(f'Unknown protocol: {protocol!r}')
+    return _get_proxies(protocol)
 
 
 class Getters:
