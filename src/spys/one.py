@@ -68,9 +68,9 @@ def get_content(show: int = 0, anm: int = 0, ssl: int = 0, sort: int = 0, port: 
     with requests.session() as ses:
         xx0_soup = _best_bs4_future(ses.post('https://spys.one/en/http-proxy-list/',
                                              headers={'User-Agent': 'Mozilla/5.0'}).text)
-        token = xx0_soup.find('input', {'name': 'xx0'})['value']
+        token = xx0_soup.find_all('input', {'name': 'xx0'})[0]['value']
         if port is None:
-            yield array.array('H', [opt.contents[0] for opt in xx0_soup.find(attrs={'id': 'xf4'}).find_all('option')])
+            yield array.array('H', [opt.contents[0] for opt in xx0_soup.find_all(attrs={'id': 'xf4'})[0].find_all('option')])
             port = yield
             port = str(port)
         while True:
@@ -108,7 +108,7 @@ def parse_table(content: str) -> ProxyViews:
     If lxml is installed (pip install lxml), it will be used.
     """
     soup = _best_bs4_future(content)
-    exec(soup.find('script', {'type': 'text/javascript'}).text, obfuscated := {})
+    exec(soup.find_all('script', {'type': 'text/javascript'})[0].text, obfuscated := {})
     try:
         del obfuscated['__builtins__']
     except KeyError:
@@ -116,7 +116,7 @@ def parse_table(content: str) -> ProxyViews:
     return tuple(
         ProxyView(
             *((cols[0].text,
-               eval(cols[0].find('script').text[:-1].split('+', 1)[1].replace('(', 'str(', 5), obfuscated))
+               eval(cols[0].find_all('script')[0].text[:-1].split('+', 1)[1].replace('(', 'str(', 5), obfuscated))
               + tuple(col.text for col in cols[1:3])
               + ((cols[3].text, acronym.get('title')) if (acronym := cols[3].find('acronym')) else (cols[3].text,),)
               + tuple(col.text for col in cols[4:] if col.text)))
