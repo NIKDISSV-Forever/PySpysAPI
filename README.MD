@@ -135,7 +135,10 @@ def get_proxies(show: int = 0, anm: int = 0, ssl: int = 0, sort: int = 0, port: 
 
 
 def parse_table(content: str) -> ProxyViews:
-    """Парсит ответ от сайта и превратит данные с таблицы в класс ProxyView"""
+    """
+    Парсит ответ от сайта и превратит данные с таблицы в класс ProxyView.
+    Если установлен lxml (pip install lxml), будет использован он.
+    """
     ...
 ```
 

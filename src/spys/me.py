@@ -1,6 +1,7 @@
 import re
 import urllib.parse
 import urllib.request
+from typing import Tuple
 
 from spys.filters import filter_proxies
 from spys.proxy_view import BaseProxyView, ProxyViews
@@ -10,7 +11,7 @@ __all__ = ('DATA_REGEX', 'HOST',
            'ProxyView', 'ResultType',
            'parse_proxies', 'get_proxies')
 
-ResultType = tuple[str, ProxyViews, str]
+ResultType = Tuple[str, ProxyViews, str]
 HOST = 'https://spys.me/'
 DATA_REGEX = re.compile(r'(\d+\.\d+\.\d+\.\d+):(\d+)\s+(..)-(.)-?(S?)(!?)\s+([+-]?)')
 

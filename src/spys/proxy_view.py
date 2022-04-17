@@ -2,6 +2,8 @@ from typing import Callable, TypeVar, Union, Type, Iterable
 
 __all__ = ('BaseProxyView', 'ProxyViews')
 
+import bs4
+
 TI = TypeVar('TI')
 TO = TypeVar('TO')
 
@@ -30,3 +32,5 @@ class BaseProxyView:
 
 
 ProxyViews: Type[Iterable[BaseProxyView]] = Iterable[BaseProxyView]
+
+
