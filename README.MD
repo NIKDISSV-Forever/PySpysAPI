@@ -19,24 +19,23 @@ __all__ = ('me', 'one', 'filters', 'proxy_view')
 ```python
 __all__ = ('DATA_REGEX', 'HOST',
            'Getters',
-           'ProxyView', 'ResultType',
+           'ProxyView',
            'parse_proxies', 'get_proxies')
 
-ResultType = tuple[str, ProxyViews, str]
 HOST = 'https://spys.me/'
 DATA_REGEX = ...  # Регулярное выражение для парсинга ответа от API
 
 
 class ProxyView(BaseProxyView):
+    more_info: bool  # Имеется ли дополнительная информация о прокси (Получение самой информации только из spys.one)
+    google_passed: bool
+
     def __init__(self, host: str, port: str,
                  country: str, anonymity: str, ssl_support: str, more_info: str, google_passed: str):
         ...
 
-    more_info: bool  # Имеется ли дополнительная информация о прокси (Получение самой информации только из spys.one)
-    google_passed: bool
 
-
-def parse_proxies(data: str) -> ResultType:
+def parse_proxies(data: str) -> tuple[str, ProxyViews, str]:
     """Вернёт кортеж из доп. информации о API (str), списка прокси и доп. информации о списке прокси (str)"""
     ...
 
@@ -46,11 +45,10 @@ def get_content(protocol: str) -> str:
     ...
 
 
-def get_proxies(protocol: str) -> ProxiesList:
+def get_proxies(protocol: str) -> ProxyViews:
     """
     Параметр protocol - либо proxy (http) либо socks
     Разрешённые протоколы: proxy, socks | socks5, all, http, https, ssl (https & socks ssl)
-    :raise ValueError: если протокол не поддерживается
     """
     ...
 
@@ -99,11 +97,6 @@ HTTP_PROXY_LIST_URL = urllib.parse.urljoin(HOST, 'http-proxy-list/')
 
 
 class ProxyView(BaseProxyView):
-    def __init__(self,
-                 host: str, port: str, type: str, anonymity: str, country_city: tuple[str, str], hostname_org: str,
-                 latency: str, uptime: str, check_date: str):
-        ...
-
     type: str
     city: str
     hostname: str
@@ -114,6 +107,11 @@ class ProxyView(BaseProxyView):
     last_check_status: bool
     last_check_ago: str
     check_date: datetime.datetime | str
+
+    def __init__(self,
+                 host: str, port: str, type: str, anonymity: str, country_city: tuple[str, str], hostname_org: str,
+                 latency: str, uptime: str, check_date: str):
+        ...
 
 
 def get_content(show: int = 0, anm: int = 0, ssl: int = 0, sort: int = 0, port: int | None = 0, type: int = 0
@@ -130,15 +128,20 @@ def get_content(show: int = 0, anm: int = 0, ssl: int = 0, sort: int = 0, port: 
     ...
 
 
-def get_proxies(show: int = 0, anm: int = 0, ssl: int = 0, sort: int = 0, port: int = 0, type: int = 0) -> ProxyViews:
-    ...
-
-
 def parse_table(content: str) -> ProxyViews:
     """
     Парсит ответ от сайта и превратит данные с таблицы в класс ProxyView.
     Если установлен lxml (pip install lxml), будет использован он.
     """
+    ...
+
+
+def get_proxies(show: filters.ShowTypes = 0,
+                anm: filters.AnmTypes = 0,
+                ssl: filters.SSLTypes = 0,
+                sort: filters.SortTypes = 0,
+                port: filters.PortTypes = 0,
+                type: filters.TypeTypes = 0) -> ProxyViews:
     ...
 ```
 
@@ -157,14 +160,14 @@ class IntChoice:
     values = ()
     type = int
 
-    def __new__(cls, item) -> type:
+    def __new__(cls, item_or_index) -> type:
         ...
 
-    def __class_getitem__(cls, item) -> type:
+    def __class_getitem__(cls, item_or_index) -> type:
         ...
 
     @classmethod
-    def about(cls):
+    def nearest(cls):
         """
         Если передано значение не из cls.values, то с помощью этого метода будет выбранно близжаешее к тому значение
         """
@@ -197,6 +200,14 @@ class Type(StringChoice):
 
 class Sort(StringChoice):
     values = ('DATE', 'SPEED')
+
+
+ShowTypes = Union[Show.type, Show, type[Show]]
+PortTypes = Union[Port.type, Port, type[Port]]
+AnmTypes = Union[Anm.type, Anm, type[Anm]]
+SSLTypes = Union[SSL.type, SSL, type[SSL]]
+TypeTypes = Union[Type.type, Type, type[Type]]
+SortTypes = Union[Sort.type, Sort, type[Sort]]
 ```
 
 ## spys.proxy_view
@@ -212,11 +223,12 @@ class BaseProxyView:
     country: str
     more_info: str | bool
 
-    def __str__(self):
-        return f'{self.host}:{self.port}'
+    def __str__(self): return f'{self.host}:{self.port}'
+
+    def __repr__(self): ...
 
 
-ProxyViews: Type[Iterable[BaseProxyView]] = Iterable[BaseProxyView]
+ProxyViews = Iterable[BaseProxyView]
 ```
 
 ### For English documentation use pydoc
