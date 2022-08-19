@@ -1,10 +1,12 @@
-import array
+from __future__ import annotations
+
 import urllib.parse
+from array import array
 from datetime import datetime
-from typing import Optional, Generator, Union, Tuple
+from typing import Generator
 
 import bs4
-import requests
+from httpx import Client
 
 from spys import filters
 from spys.proxy_view import BaseProxyView, ProxyViews
@@ -22,7 +24,7 @@ class ProxyView(BaseProxyView):
                  'last_check_status', 'last_check_ago', 'check_date')
 
     def __init__(self,
-                 host: str, port: str, type: str, anonymity: str, country_city: Tuple[str, str], hostname_org: str,
+                 host: str, port: str, type: str, anonymity: str, country_city: tuple[str, str], hostname_org: str,
                  latency: str, uptime: str, check_date: str):
         self.host = host
         self.port = self._convert_to(int, port)
@@ -30,7 +32,7 @@ class ProxyView(BaseProxyView):
         self.anonymity = anonymity
         if len(country_city) < 2:
             country_city += '',
-        country_city = country_city[0].split()
+        country_city = (*country_city[0].split(),)
         while len(country_city) < 2:
             country_city += '',
         self.country = country_city[0]
@@ -49,12 +51,17 @@ class ProxyView(BaseProxyView):
         self.last_check_status = _uptime[2] == '+'
         _check_date = check_date.partition('(')
         self.last_check_ago = _check_date[2].rstrip(')')
-        self.check_date: Union[datetime, str] = self._convert_to(lambda s: datetime.strptime(s, '%d-%b-%Y %H:%M'),
-                                                                 _check_date[0].strip())
+        self.check_date: datetime | str = self._convert_to(lambda s: datetime.strptime(s, '%d-%b-%Y %H:%M'),
+                                                           _check_date[0].strip())
 
 
-def get_content(show: int = 0, anm: int = 0, ssl: int = 0, sort: int = 0, port: Optional[int] = 0, type: int = 0
-                ) -> Generator[Union[array.array, str, None], Union[int, str, None], None]:
+def get_content(show: filters.ShowTypes = 0,
+                anm: filters.AnmTypes = 0,
+                ssl: filters.SSLTypes = 0,
+                sort: filters.SortTypes = 0,
+                port: filters.PortTypes | None = 0,
+                type: filters.TypeTypes = 0
+                ) -> Generator[array | str | None, int | str | None, None]:
     """
     Low-level function, parameters - input data fields see get_proxies parameter names.
     Will return the generator if the port is None (xf4),
@@ -65,41 +72,25 @@ def get_content(show: int = 0, anm: int = 0, ssl: int = 0, sort: int = 0, port: 
 
     The answer must be passed to the parse_table function to get a list of proxies.
     """
-    with requests.session() as ses:
-        xx0_soup = _best_bs4_future(ses.post('https://spys.one/en/http-proxy-list/',
-                                             headers={'User-Agent': 'Mozilla/5.0'}).text)
+    with Client() as client:
+        xx0_soup = _best_bs4_future(client.post('https://spys.one/en/http-proxy-list/',
+                                                headers={'User-Agent': 'Mozilla/5.0'}).text)
         token = xx0_soup.find_all('input', {'name': 'xx0'})[0]['value']
         if port is None:
-            yield array.array('H', [opt.contents[0] for opt in xx0_soup.find_all(attrs={'id': 'xf4'})[0].find_all('option')])
+            yield array('H', [opt.contents[0] for opt in xx0_soup.find_all(attrs={'id': 'xf4'})[0].find_all('option')])
             port = yield
             port = str(port)
         while True:
-            yield ses.post(HTTP_PROXY_LIST_URL,
-                           headers={'referer': HTTP_PROXY_LIST_URL, 'User-Agent': 'Mozilla/5.0'},
-                           data={'xx0': token,
-                                 'xpp': show,
-                                 'xf1': anm,
-                                 'xf2': ssl,
-                                 'xf3': sort,
-                                 'xf4': port,
-                                 'xf5': type}
-                           ).text
-
-
-def get_proxies(show: int = 0,
-                anm: Union[int, str] = 0,
-                ssl: Union[int, str] = 0,
-                sort: Union[int, str] = 0,
-                port: int = 0,
-                type: Union[int, str] = 0) -> ProxyViews:
-    show = filters.Show(show)
-    anm = filters.Anm(anm)
-    ssl = filters.SSL(ssl)
-    sort = filters.Sort(sort)
-    port = filters.Port(port)
-    type = filters.Type(type)
-    # noinspection PyTypeChecker
-    return parse_table(next(get_content(show, anm, ssl, sort, 0 if port is None else port, type)))
+            yield client.post(HTTP_PROXY_LIST_URL,
+                              headers={'referer': HTTP_PROXY_LIST_URL, 'User-Agent': 'Mozilla/5.0'},
+                              data={'xx0': token,
+                                    'xpp': show,
+                                    'xf1': anm,
+                                    'xf2': ssl,
+                                    'xf3': sort,
+                                    'xf4': port,
+                                    'xf5': type}
+                              ).text
 
 
 def parse_table(content: str) -> ProxyViews:
@@ -113,14 +104,27 @@ def parse_table(content: str) -> ProxyViews:
         del obfuscated['__builtins__']
     except KeyError:
         pass
-    return tuple(
+    return (*(
         ProxyView(
             *((cols[0].text,
                eval(cols[0].find_all('script')[0].text[:-1].split('+', 1)[1].replace('(', 'str(', 5), obfuscated))
-              + tuple(col.text for col in cols[1:3])
+              + (*(col.text for col in cols[1:3]),)
               + ((cols[3].text, acronym.get('title')) if (acronym := cols[3].find('acronym')) else (cols[3].text,),)
-              + tuple(col.text for col in cols[4:] if col.text)))
-        for cols in (row.find_all('td') for row in soup.find_all('table')[2].find_all('tr')[2:-1]) if len(cols) > 1)
+              + (*(col.text for col in cols[4:] if col.text),)))
+        for cols in (row.find_all('td') for row in soup.find_all('table')[2].find_all('tr')[2:-1]) if len(cols) > 1),)
+
+
+def get_proxies(show: filters.ShowTypes = 0,
+                anm: filters.AnmTypes = 0,
+                ssl: filters.SSLTypes = 0,
+                sort: filters.SortTypes = 0,
+                port: filters.PortTypes = 0,
+                type: filters.TypeTypes = 0) -> ProxyViews:
+    port = filters.Port(port)
+    return parse_table(next(get_content(
+        filters.Show(show), filters.Anm(anm), filters.SSL(ssl), filters.Sort(sort),
+        0 if port is None else port, filters.Type(type)))
+    )
 
 
 def _best_bs4_future(markup: str) -> bs4.BeautifulSoup:
