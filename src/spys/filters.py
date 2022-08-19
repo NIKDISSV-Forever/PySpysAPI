@@ -1,6 +1,8 @@
 """Module for convenient presentation of input data fields (see spy.one.get_content)"""
-import difflib
-from typing import Callable
+from __future__ import annotations
+
+from difflib import get_close_matches
+from typing import Callable, Type as _TypingType, Union
 
 from spys.proxy_view import ProxyViews
 
@@ -15,21 +17,22 @@ class IntChoice:
     values = ()
     type = int
 
-    def __new__(cls, item) -> type:
-        if item in range(len(cls.values) + 1):
-            return item
-        if not isinstance(item, cls.type):
-            item = cls.type(item)
+    def __new__(cls, item_or_index) -> int:
+        values_count = len(cls.values)
+        if isinstance(item_or_index, int) and -values_count <= item_or_index < values_count:
+            return item_or_index % values_count
+        if not isinstance(item_or_index, cls.type):
+            item_or_index = cls.type(item_or_index)
         try:
-            return cls.values.index(item)
+            return cls.values.index(item_or_index)
         except ValueError:
-            return cls.values.index(cls.about(item))
+            return cls.values.index(cls.nearest(item_or_index))
 
-    def __class_getitem__(cls, item) -> type:
-        return cls(item)
+    def __class_getitem__(cls, item_or_index) -> type:
+        return cls(item_or_index)
 
     @classmethod
-    def about(cls, item):
+    def nearest(cls, item):
         """If a value not from cls.values is passed, then the nearest value will be selected using this method"""
         return min(cls.values, key=lambda i: abs(i - item))
 
@@ -49,8 +52,8 @@ class StringChoice(IntChoice):
     type = str
 
     @classmethod
-    def about(cls, item) -> type:
-        return cm[0] if (cm := difflib.get_close_matches(item.upper(), cls.values)) else cls.values[0]
+    def nearest(cls, item) -> type:
+        return cm[0] if (cm := get_close_matches(item.upper(), cls.values)) else cls.values[0]
 
 
 class Anm(StringChoice):
@@ -74,4 +77,12 @@ class Sort(StringChoice):
 
 
 def filter_proxies(proxies: ProxyViews, key: Callable = None) -> ProxyViews:
-    return tuple(proxy for proxy in proxies if key(proxy))
+    return *(proxy for proxy in proxies if key(proxy)),
+
+
+ShowTypes = Union[Show.type, Show, _TypingType[Show]]
+PortTypes = Union[Port.type, Port, _TypingType[Port]]
+AnmTypes = Union[Anm.type, Anm, _TypingType[Anm]]
+SSLTypes = Union[SSL.type, SSL, _TypingType[SSL]]
+TypeTypes = Union[Type.type, Type, _TypingType[Type]]
+SortTypes = Union[Sort.type, Sort, _TypingType[Sort]]
